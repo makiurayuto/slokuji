@@ -1,0 +1,14 @@
+{
+  "name": "slokuji",
+  "version": "0.1.0",
+  "private": true,
+  "description": "iPhone向けスロット形式の箱くじPWA",
+  "type": "module",
+  "scripts": {
+    "test": "node tools/stamp-sw.mjs && node --test",
+    "stamp": "node tools/stamp-sw.mjs",
+    "start": "node tools/serve.js",
+    "check": "node tools/check.mjs",
+    "icons": "node tools/make-icons.mjs"
+  }
+}

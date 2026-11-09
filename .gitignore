@@ -1,0 +1,10 @@
+# 元の写真（アプリでは使わない。公開しない）
+gatya.jpg
+
+# 自動で作られるもの・各PC固有のもの
+node_modules/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
