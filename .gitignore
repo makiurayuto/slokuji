@@ -2,6 +2,7 @@
 gatya.jpg
 
 # 自動で作られるもの・各PC固有のもの
+_site/
 node_modules/
 *.log
 npm-debug.log*

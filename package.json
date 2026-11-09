@@ -9,6 +9,7 @@
     "stamp": "node tools/stamp-sw.mjs",
     "start": "node tools/serve.js",
     "check": "node tools/check.mjs",
-    "icons": "node tools/make-icons.mjs"
+    "icons": "node tools/make-icons.mjs",
+    "build": "node tools/build-site.mjs"
   }
 }
