@@ -15,6 +15,8 @@ const SYMS = ["tou", "dai", "toku", "seven"];
 // リールが止まり始める時間（ミリ秒）：[左, 中, 右]。止まりきるまでさらに LAND_MS
 const SPEED_TIMES = { slow: [600, 1150, 1900], normal: [350, 700, 1100], fast: [200, 380, 560] };
 const LAND_MS = 300;
+// 右リールが止まりきってから当選表示を出すまでの「ため」（ミリ秒）
+const RESULT_DELAY = { slow: 400, normal: 400, fast: 200 };
 const TAP_GUARD_MS = 600;   // 当選表示が出てすぐの連打で閉じないように
 const START_GRID = [["dai", "tou", "toku"], ["tou", "seven", "dai"], ["toku", "dai", "tou"]];
 
@@ -388,7 +390,8 @@ function onStart() {
     shownGrid = grid;
     $("overlay").innerHTML = "";
     document.querySelectorAll(".mark.reach").forEach((m) => m.classList.remove("reach"));
-    showResult(data.last);
+    // 少し間をおいてから結果を出す（その間もSTARTやリセットは押せない）
+    setTimeout(() => showResult(data.last), RESULT_DELAY[data.settings.speed] ?? RESULT_DELAY.normal);
   }), T[2]);
 }
 

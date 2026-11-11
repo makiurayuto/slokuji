@@ -333,6 +333,25 @@ try {
     }
   });
 
+  await scenario("11b. 右リールが止まってから、少し間をおいて当選表示が出る", async (expect) => {
+    // 右リールが止まり始める時間 + 止まりきるまで0.3秒 + ため
+    const plan = { slow: [1900, 400], normal: [1100, 400], fast: [560, 200] };
+    for (const [speed, [stop, delay]] of Object.entries(plan)) {
+      await open({ saved: savedAfter(0, { settings: { speed, sound: false } }) });
+      const landed = stop + 300, expected = landed + delay;
+      const ms = await js(`new Promise((res) => {
+        const b = document.getElementById("burst");
+        const mo = new MutationObserver(() => { if (b.classList.contains("on")) { mo.disconnect(); res(Math.round(performance.now() - t0)); } });
+        mo.observe(b, { attributes: true });
+        const t0 = performance.now();
+        document.getElementById("start").click();
+        setTimeout(() => res(-1), 6000);
+      })`);
+      expect(ms >= expected - 40 && ms <= expected + 300,
+        `${speed === "slow" ? "遅い" : speed === "normal" ? "普通" : "速い"}：止まりきってから約${delay / 1000}秒後に表示（START から ${ms}ms、目安 ${expected}ms、止まりきるのは ${landed}ms）`);
+    }
+  });
+
   await scenario("12. アプリを更新しても記録は消えず、新しい版は次に開いたときに反映", async (expect) => {
     await open({ saved: savedAfter(3) });
     await waitFor(`document.getElementById("offline").dataset.state === "ok"`, 10000);
