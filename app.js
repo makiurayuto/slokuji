@@ -7,7 +7,7 @@ import { LINES, winLines, getBoardTable } from "./logic/board.js";
 import {
   loadData, saveData, drawAndSave, markRevealed, resetData, updateSettings, createInitialData, StorageError,
 } from "./logic/storage.js";
-import { tileSVG as makeTileSVG } from "./tiles.js";
+import { tileSVG as makeTileSVG, TILE_DEFS } from "./tiles.js";
 
 const $ = (id) => document.getElementById(id);
 const SYMS = ["tou", "dai", "toku", "seven"];
@@ -25,7 +25,7 @@ const START_GRID = [["dai", "tou", "toku"], ["tou", "seven", "dai"], ["toku", "d
    ========================================================= */
 const tileCache = {};
 function tileSVG(sym) {
-  return tileCache[sym] || (tileCache[sym] = makeTileSVG(sym));
+  return tileCache[sym] || (tileCache[sym] = makeTileSVG(sym, undefined, { effects: true }));
 }
 
 /* =========================================================
@@ -86,7 +86,7 @@ function buildReels() {
   }
 }
 function setAngle(rl, a) { rl.a = a; rl.drum.style.transform = `translateZ(${-R}px) rotateX(${a}deg)`; }
-function setFace(rl, i, sym) { const f = rl.faces[mod(i, N)]; f.innerHTML = tileSVG(sym); f.classList.remove("dim"); }
+function setFace(rl, i, sym) { const f = rl.faces[mod(i, N)]; f.innerHTML = tileSVG(sym); f.classList.remove("dim", "lit"); }
 function faceAt(c, r) { const rl = reels[c]; return rl.faces[mod(rl.m + r - 1, N)]; }
 function showGrid(grid) {
   shownGrid = grid;
@@ -172,7 +172,8 @@ function clearEffects() {
   $("burst").classList.remove("on", "seven");
   document.querySelectorAll(".mark").forEach((m) => m.classList.remove("reach", "win"));
   document.querySelectorAll(".spark").forEach((s) => s.remove());
-  document.querySelectorAll(".face.dim").forEach((f) => f.classList.remove("dim"));
+  document.querySelectorAll(".face.dim, .face.lit").forEach((f) => f.classList.remove("dim", "lit"));
+  $("reels").classList.remove("stopped");   // 全部の絵柄が光る状態に戻す
 }
 
 /* =========================================================
@@ -235,6 +236,9 @@ function showWinLine(last) {
   $("overlay").innerHTML = win.cells.map(([r, c]) => rectSVG("wr", cellRect(r, c))).join("") +
     `<polyline class="wl" pathLength="100" points="${win.cells.map(([r, c]) => { const b = cellRect(r, c); return `${b.x + b.w / 2},${b.y + b.h / 2}`; }).join(" ")}"/>`;
   setMarks([win], "win");
+  // ここから当選表示を閉じるまで、当たった3マスだけを点滅させ、光の筋も通す
+  win.cells.forEach(([r, c]) => faceAt(c, r).classList.add("lit"));
+  $("reels").classList.add("stopped");
   return win;
 }
 
@@ -282,6 +286,9 @@ function closeResult() {
   $("tapcatch").classList.remove("on");
   $("burst").classList.remove("on");
   $("cabinet").classList.remove("win");   // ランプは通常の点滅に戻す（揃ったラインの線は次に回すまで残す）
+  // 絵柄はまた全部が光る状態に戻す（暗くしていたマスも元の明るさに）
+  $("reels").classList.remove("stopped");
+  document.querySelectorAll(".face.dim, .face.lit").forEach((f) => f.classList.remove("dim", "lit"));
   busy = false;
   const next = markRevealed(data);
   try {
@@ -483,9 +490,17 @@ function buildLamps() {
   }
 }
 
+// 絵柄の点滅：リール全体で1つの合図を切り替えるので、全部のマスが同じタイミングで光る
+const BLINK_MS = 450;
+function startBlink() {
+  setInterval(() => $("reels").classList.toggle("blink"), BLINK_MS);
+}
+
 function init() {
+  document.body.insertAdjacentHTML("afterbegin", TILE_DEFS);
   setupOffline();
   buildLamps();
+  startBlink();
   buildReels();
   showGrid(START_GRID);
   placeMarks();

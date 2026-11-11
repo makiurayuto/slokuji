@@ -96,6 +96,15 @@ button { font-family: inherit; }
   backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; justify-content: center; transition: opacity .25s; }
 .face svg { height: 100%; width: auto; max-width: 100%; display: block; }
 .reel.spinning .face { filter: blur(1.6px); }
+
+/* 絵柄の点滅（#reels の blink を app.js が0.45秒ごとに切り替える＝全部のマスが同じタイミング） */
+.face .t-glow, .face .t-bright, .face .t-shine { opacity: 0; }
+#reels.blink .face .t-glow, #reels.blink .face .t-bright { opacity: 1; }
+/* 止まった後は、当たった3マスだけ点滅させる */
+#reels.stopped .face:not(.lit) .t-glow, #reels.stopped .face:not(.lit) .t-bright { opacity: 0; }
+/* 当たった3マスには光の筋（キラッ）も通す */
+#reels.stopped .face.lit .t-shine { opacity: 1; transform-box: view-box; animation: tshine 1.6s ease-in-out infinite; }
+@keyframes tshine { 0% { transform: translateX(0); } 55%, 100% { transform: translateX(230px); } }
 .face.dim { opacity: .3; }
 .reel::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
   background:

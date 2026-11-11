@@ -369,6 +369,49 @@ try {
       "途中で閉じて開き直したときは、枠・線・景品名がすぐ全部出る");
   });
 
+  await scenario("11c. 絵柄の点滅：いつも全部そろって点滅、止まったら当たった3マスだけ（＋光の筋）", async (expect) => {
+    // 全部の絵柄の「明るい層」の見え方（1=出ている, 0=消えている）を何回か調べる
+    const sample = () => js(`[...document.querySelectorAll(".face")].map((f) => {
+      const b = f.querySelector(".t-bright"); return b ? Number(getComputedStyle(b).opacity) : -1; })`);
+    const samples = async (n) => { const out = []; for (let i = 0; i < n; i++) { out.push(await sample()); await sleep(140); } return out; };
+    const allSame = (arr) => arr.every((v) => v === arr[0]);
+
+    await open({ saved: savedAfter(0, { settings: { speed: "slow", sound: false } }) });
+    let ss = await samples(8);
+    expect(ss.every(allSame) && ss.some((s) => s[0] === 1) && ss.some((s) => s[0] === 0),
+      `待機中：${ss[0].length}枚の絵柄が、すべて同じタイミングで点滅している（調べた回数 ${ss.length}）`);
+
+    await click("#start");
+    await sleep(150);
+    ss = await samples(5);
+    expect(ss.every(allSame), "回転中：描き直される絵柄も含めて、すべて同じタイミングで点滅している");
+
+    await waitFor(`!!document.querySelector("#overlay .wl")`, 6000);
+    await waitFor(`document.getElementById("reels").classList.contains("blink")`, 2000);
+    const st = await js(`(() => {
+      const faces = [...document.querySelectorAll(".face")];
+      const op = (f, sel) => Number(getComputedStyle(f.querySelector(sel)).opacity);
+      const lit = faces.filter((f) => f.classList.contains("lit")), other = faces.filter((f) => !f.classList.contains("lit"));
+      return { lit: lit.length, litOn: lit.every((f) => op(f, ".t-bright") === 1), otherOff: other.every((f) => op(f, ".t-bright") === 0),
+        litShine: lit.every((f) => getComputedStyle(f.querySelector(".t-shine")).animationName === "tshine" && op(f, ".t-shine") === 1),
+        otherShine: other.every((f) => op(f, ".t-shine") === 0) };
+    })()`);
+    expect(st.lit === 3 && st.litOn && st.otherOff, `止まった後：当たった3マスだけが点滅し、ほかは光らない（光るマス ${st.lit}）`);
+    expect(st.litShine && st.otherShine, "止まった後：当たった3マスにだけ光の筋（キラッ）が通る");
+
+    await waitFor(resultShown, 6000);
+    await click("#tapcatch");
+    await sleep(100);
+    const after = await js(`({ stopped: document.getElementById("reels").classList.contains("stopped"),
+      lit: document.querySelectorAll(".face.lit").length, dim: document.querySelectorAll(".face.dim").length,
+      line: !!document.querySelector("#overlay .wl") })`);
+    ss = await samples(6);
+    expect(!after.stopped && after.lit === 0 && after.dim === 0 && ss.every(allSame) && ss.some((s) => s[0] === 1),
+      "当選表示を閉じたら、全部の絵柄がそろって点滅する状態に戻る（暗くしたマスも元に戻る）");
+    expect(after.line, "揃ったラインの線は、次に回すまで残っている");
+    await shot("点滅_待機中");
+  });
+
   await scenario("12. アプリを更新しても記録は消えず、新しい版は次に開いたときに反映", async (expect) => {
     await open({ saved: savedAfter(3) });
     await waitFor(`document.getElementById("offline").dataset.state === "ok"`, 10000);
