@@ -106,8 +106,13 @@ button { font-family: inherit; }
 .overlay { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: visible; width: 100%; height: 100%; }
 .overlay .rr { fill: none; stroke: #ff2a4a; stroke-width: 4; animation: rr .25s steps(1) infinite; }
 @keyframes rr { 50% { stroke: #fff; } }
-.overlay .wr { fill: rgba(255,230,120,.15); stroke: #ffe14d; stroke-width: 4; filter: drop-shadow(0 0 6px #ffd54a); }
-.overlay .wl { fill: none; stroke: #ffe14d; stroke-width: 6; stroke-linecap: round; opacity: .9; filter: drop-shadow(0 0 6px #ff9d00); }
+.overlay .wr { fill: rgba(255,230,120,.15); stroke: #ffe14d; stroke-width: 4; filter: drop-shadow(0 0 6px #ffd54a);
+  transform-box: fill-box; transform-origin: center; animation: framein .16s ease-out; }
+@keyframes framein { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+/* 線は左から右へ引かれる（pathLength=100 を基準に） */
+.overlay .wl { fill: none; stroke: #ffe14d; stroke-width: 6; stroke-linecap: round; opacity: .9; filter: drop-shadow(0 0 6px #ff9d00);
+  stroke-dasharray: 100; stroke-dashoffset: 0; animation: drawline .18s ease-out; }
+@keyframes drawline { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 
 /* 当選表示 */
 .burst { position: absolute; inset: -30px; z-index: 6; pointer-events: none; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .3s; }

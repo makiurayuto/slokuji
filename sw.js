@@ -27,7 +27,7 @@ const FILES = [
 // </files>
 
 // 版の番号：上のファイルの中身から自動で計算する（npm test のたびに tools/stamp-sw.mjs が書き換える）
-const VERSION = "8a5bc8bcb2b4";
+const VERSION = "96e9da8c089a";
 const CACHE = `slokuji-${VERSION}`;
 
 self.addEventListener("install", (event) => {

@@ -333,23 +333,40 @@ try {
     }
   });
 
-  await scenario("11b. 右リールが止まってから、少し間をおいて当選表示が出る", async (expect) => {
+  await scenario("11b. 右リールが止まったら枠と線、少し間をおいて景品名が出る", async (expect) => {
     // 右リールが止まり始める時間 + 止まりきるまで0.3秒 + ため
     const plan = { slow: [1900, 400], normal: [1100, 400], fast: [560, 200] };
     for (const [speed, [stop, delay]] of Object.entries(plan)) {
+      const name = speed === "slow" ? "遅い" : speed === "normal" ? "普通" : "速い";
       await open({ saved: savedAfter(0, { settings: { speed, sound: false } }) });
       const landed = stop + 300, expected = landed + delay;
-      const ms = await js(`new Promise((res) => {
-        const b = document.getElementById("burst");
-        const mo = new MutationObserver(() => { if (b.classList.contains("on")) { mo.disconnect(); res(Math.round(performance.now() - t0)); } });
+      const t = await js(`new Promise((res) => {
+        const b = document.getElementById("burst"), ov = document.getElementById("overlay");
+        const out = { line: -1, burst: -1, burstAtLine: null, frames: 0, marks: 0 };
+        const now = () => Math.round(performance.now() - t0);
+        const mo = new MutationObserver(() => {
+          if (out.line < 0 && ov.querySelector(".wl")) {
+            out.line = now(); out.burstAtLine = b.classList.contains("on");
+            out.frames = ov.querySelectorAll(".wr").length; out.marks = document.querySelectorAll(".mark.win").length;
+          }
+          if (out.burst < 0 && b.classList.contains("on")) { out.burst = now(); mo.disconnect(); res(out); }
+        });
         mo.observe(b, { attributes: true });
+        mo.observe(ov, { childList: true });
         const t0 = performance.now();
         document.getElementById("start").click();
-        setTimeout(() => res(-1), 6000);
+        setTimeout(() => res(out), 6000);
       })`);
-      expect(ms >= expected - 40 && ms <= expected + 300,
-        `${speed === "slow" ? "遅い" : speed === "normal" ? "普通" : "速い"}：止まりきってから約${delay / 1000}秒後に表示（START から ${ms}ms、目安 ${expected}ms、止まりきるのは ${landed}ms）`);
+      expect(t.line >= landed - 40 && t.line <= landed + 200 && t.burstAtLine === false && t.frames === 3 && t.marks === 2,
+        `${name}：止まりきった直後に黄色の枠3つと線が出て、ライン番号が光る（${t.line}ms、止まりきるのは ${landed}ms）。この時点では景品名はまだ出ていない`);
+      expect(t.burst >= expected - 40 && t.burst <= expected + 300,
+        `${name}：その約${delay / 1000}秒後に景品名が出る（START から ${t.burst}ms、目安 ${expected}ms）`);
+      expect(await js(`document.querySelectorAll("#overlay .wl").length === 1 && document.querySelectorAll("#overlay .wr").length === 3`),
+        `${name}：景品名が出た後も、枠と線は1組だけ（二重に描かれない）`);
     }
+    await open({ saved: savedAfter(17, { unrevealed: true }) });
+    expect(await js(`document.getElementById("burst").classList.contains("on") && document.querySelectorAll("#overlay .wl").length === 1`),
+      "途中で閉じて開き直したときは、枠・線・景品名がすぐ全部出る");
   });
 
   await scenario("12. アプリを更新しても記録は消えず、新しい版は次に開いたときに反映", async (expect) => {

@@ -229,15 +229,21 @@ function renderSettings() {
 /* =========================================================
    当選表示（タップで閉じる）
    ========================================================= */
-function showResult(last, { resumed = false } = {}) {
+/** 揃ったラインに黄色の枠と光る線を出す（右リールが止まりきった直後に出す） */
+function showWinLine(last) {
   const win = winLines(last.grid)[0];
-  const seven = last.prize === "seven";
   $("overlay").innerHTML = win.cells.map(([r, c]) => rectSVG("wr", cellRect(r, c))).join("") +
-    `<polyline class="wl" points="${win.cells.map(([r, c]) => { const b = cellRect(r, c); return `${b.x + b.w / 2},${b.y + b.h / 2}`; }).join(" ")}"/>`;
+    `<polyline class="wl" pathLength="100" points="${win.cells.map(([r, c]) => { const b = cellRect(r, c); return `${b.x + b.w / 2},${b.y + b.h / 2}`; }).join(" ")}"/>`;
+  setMarks([win], "win");
+  return win;
+}
+
+function showResult(last, { resumed = false } = {}) {
+  const win = $("overlay").querySelector(".wl") ? winLines(last.grid)[0] : showWinLine(last);
+  const seven = last.prize === "seven";
   for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
     if (!win.cells.some(([wr, wc]) => wr === r && wc === c)) faceAt(c, r).classList.add("dim");
   }
-  setMarks([win], "win");
   $("cabinet").classList.add("win");
 
   // 景品名は画面幅いっぱい近くまで大きく（ラッキーセブンは2行）
@@ -390,7 +396,8 @@ function onStart() {
     shownGrid = grid;
     $("overlay").innerHTML = "";
     document.querySelectorAll(".mark.reach").forEach((m) => m.classList.remove("reach"));
-    // 少し間をおいてから結果を出す（その間もSTARTやリセットは押せない）
+    // まず揃ったラインの枠と線を出し、少し間をおいてから景品名などを出す（その間もSTARTやリセットは押せない）
+    showWinLine(data.last);
     setTimeout(() => showResult(data.last), RESULT_DELAY[data.settings.speed] ?? RESULT_DELAY.normal);
   }), T[2]);
 }
